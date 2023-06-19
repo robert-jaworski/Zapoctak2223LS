@@ -4,7 +4,7 @@
 using namespace std;
 using namespace matrices;
 
-int main() {
+int run_test() {
     fixed_matrix<double, 3, 3> m1(0), m2;
 
     cout << "m1 == \n";
@@ -28,4 +28,5 @@ int main() {
     cout << "m3 == \n";
     cout << m3 << endl;
 
+    return 0;
 }

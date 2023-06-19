@@ -6,7 +6,7 @@ CPP_FILES = $(addprefix src/, $(addsuffix .cpp, $(SRC_FILES)))
 HPP_FILES = $(addprefix src/, $(addsuffix .hpp, $(SRC_FILES)))
 OBJ_FILES = $(addprefix build/, $(addsuffix .o, $(SRC_FILES)))
 
-TESTS = assignment_test fixed_assignment_test
+TESTS = assignment_test fixed_assignment_test equality_test addition_test multiplication_test assert_test
 
 TESTS_EXE = $(addprefix build/, $(TESTS))
 
@@ -30,5 +30,8 @@ src/all.hpp: $(HPP_FILES)
 	echo '#pragma once' >$@
 	./make_all_hpp.sh $(addsuffix .hpp, $(SRC_FILES)) >>$@
 
-build/%: test/%.cpp lib/matrices.a
+build/%: test/%.cpp build/test_wrapper.o lib/matrices.a
 	g++ $(CPP_ARGS) $^ -o $@
+
+build/test_wrapper.o: test/test_wrapper.cpp
+	g++ -c $(CPP_ARGS) $^ -o $@

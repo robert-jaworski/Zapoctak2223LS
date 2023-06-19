@@ -7,13 +7,22 @@ namespace matrices {
     namespace exceptions {
 
         class assert_error : public std::exception {
-            const std::string message;
+            std::string message;
 
         public:
-            inline assert_error(const char* msg) : message(message) {}
-            inline assert_error(const std::string& msg) : message(message) {}
+            inline assert_error(const char* msg) {
+                message = msg;
+            }
+
+            inline assert_error(const std::string& msg) {
+                message = msg;
+            }
 
             const char* what() const noexcept;
+
+            inline const std::string& msg() const {
+                return message;
+            }
         };
 
     }

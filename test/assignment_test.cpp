@@ -4,7 +4,7 @@
 using namespace std;
 using namespace matrices;
 
-int main() {
+int run_test() {
     matrix<double> m1(3, 3, 0), m2(3, 3);
 
     cout << "m1 == \n";
@@ -27,5 +27,6 @@ int main() {
     const matrix<double> m3 = m2;
     cout << "m3 == \n";
     cout << m3 << endl;
-
+    
+    return 0;
 }
