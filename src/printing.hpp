@@ -4,6 +4,7 @@
 #include <iomanip>
 #include "matrix.hpp"
 #include "fixed_matrix.hpp"
+#include "number_types.hpp"
 
 namespace matrices {
 
@@ -29,6 +30,37 @@ namespace matrices {
             os << " |\n";
         }
         return os;
+    }
+
+    template <typename T>
+    inline std::ostream& operator<<(std::ostream& os, const finite_field<T>& x) {
+        return os << x.value();
+    }
+
+    template <typename T>
+    inline std::istream& operator>>(std::istream& os, const finite_field<T>& x) {
+        T val;
+        os >> val;
+        x = val;
+        return os;
+    }
+
+    template <typename T, T P>
+    inline std::ostream& operator<<(std::ostream& os, const finite_field_template<T, P>& x) {
+        return os << x.value();
+    }
+
+    template <typename T, T P>
+    inline std::istream& operator>>(std::istream& os, const finite_field_template<T, P>& x) {
+        T val;
+        os >> val;
+        x = val;
+        return os;
+    }
+
+    template <typename T>
+    inline std::ostream& operator<<(std::ostream& os, const fraction<T>& x) {
+        return os << x.numerator() << "/" << x.denominator();
     }
 
 }

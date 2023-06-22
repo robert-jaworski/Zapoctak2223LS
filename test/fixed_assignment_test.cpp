@@ -28,5 +28,8 @@ int run_test() {
     cout << "m3 == \n";
     cout << m3 << endl;
 
+    fixed_matrix<double, 2, 3> rect({ { 1, 2, 3 }, { 4, 5, 6 } });
+    cout << rect << rect.transpose() << endl;
+
     return 0;
 }

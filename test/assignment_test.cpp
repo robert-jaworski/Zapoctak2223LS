@@ -27,6 +27,9 @@ int run_test() {
     const matrix<double> m3 = m2;
     cout << "m3 == \n";
     cout << m3 << endl;
+
+    matrix<double> rect(2, 3, { { 1, 2, 3 }, { 4, 5, 6 } });
+    cout << rect << rect.transpose() << endl;
     
     return 0;
 }
