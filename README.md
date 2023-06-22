@@ -1,92 +1,126 @@
-# student
+# Matice, konečná tělesa, zlomky - knihovna
 
-Tady bude Váš zápočtový program
+Tato knihovna specifikuje **C++** `template`y pro počítání s maticemi, zlomky a konečnými tělesy.
 
-## Getting started
+Násobení matic probíhá dle definice (Strassenův algoritmus možná dodělám později, pokud bude potřeba).
+Počítání inverze a determinantu probíhá pomocí Gaussovy eliminace.
+Umocňování probíhá v logaritmickém čase.
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
+Implementaci `bigint`u jsem zkopíroval ze starého projektu.
 
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
+Knihovna se zaměřuje hlavně na počítání s maticem/zlomky/... - funkce pro výpis na standardní výstup slouží hlavně k debugování.
 
-## Add your files
+## Použití knihovny
 
-- [ ] [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-- [ ] [Add files using the command line](https://docs.gitlab.com/ee/gitlab-basics/add-file.html#add-a-file-using-the-command-line) or push an existing Git repository with the following command:
+Hlavním `namespace`em je `matrices`, který obsahuje několik tříd a funkcí.
+Dále knihovna obsahuje `namespace number_utils`, který obsahuje několik užitečných funkcí a implementaci `bigint`u.
 
+Máme dvě různé třídy pro matice - `matrices::matrix<T, ROWS, COLS>` a `matrices::dynamic_matrix<T>`.
+Tyto matice umožňují stejné operace
+
+### Třídy `matrices::matrix<T, ROWS, COLS>` a `matrices::dynamic_matrix<T>`
+
+Počítání v $T^{ROWS\times COLS}$.
+
+Třída `matrices::matrix<T, ROWS, COLS>` představuje matici, u které známe velikost během kompilace.
+Umožňuje kontrolu validity sčítání/násobení (jestli sedí rozměry) během kompilace.
+
+Třída `matrices::dynamic_matrix<T>` představuje matici, které při konstrukci zadáme rozměry a pak už je nesmíme změnit.
+Kontrolu validity sčítání/násobení (jestli sedí rozměry) provádí pomocí `assert`ů - při chybě vyhodí `matrices::assert_error`.
+
+K prvkům matice můžeme přistupovat pomocí metody `element(int, int)`, nebo pomocí operátor `[]` - například `m[0][1] = 2`.
+
+Matice podporují konstrukci a přiřazení pomocí `std::initializer_list`, tedy např. `m = { 1, 2, 3, 4 }` nebo `m = { { 1, 2 }, { 3, 4 } }`.
+
+Matice implementují operace `==`, `!=`, `+`, `-`, `*`, `+=`, `-=`, `*=`, `multiply_from_left`, `^`, `^=`, `trace`, `transpose`,
+`transpose_self`, `get_REF`, `get_RREF`, `do_REF`, `do_RREF`, `compute_rank`, `compute_inverse_RREF` a `compute_determinant_REF`.
+- `^` znamená umocňování.
+- `multiply_from_left` je jako `*=`, ale násobí zleva.
+- `transpose_self` nahradí matici její transpozicí - lze jen pro čtvercovou matici.
+- `get_REF`/`get_RREF` vrátí REF/RREF tvar matice.
+- `do_REF`/`do_RREF` provede na matici Gaussovu/Gauss-Jordanovu eliminaci.
+- `compute_rank`/`compute_inverse_RREF`/`compute_determinant_REF`
+    spočítají rank/inverzi/determinant matice pomocí Gaussovy nebo Gauss-Jordanovy eliminace. Výpočet proběhne při každém zavolání znovu.
+
+Na třídách existují statické metody `identity(int)`, které vrátí jednotkovou matici.
+Ještě existuje funkce `matrices::identity_matrix<T, SIZE>()`, která vrací jednotkovou `matrices::matrix<T, SIZE, SIZE>`.
+
+### Třídy `matrices::finite_field<T>` a `matrices::finite_field_template<T, P>`
+
+Počítání v $\mathbb Z_p$.
+
+Třída `matrices::finite_field_template<T, P>` představuje konečné těleso, u kterého známe velikost (prvočíslo P) během kompilace.
+Existují zkratky `matrices::int_finite_field<int P>` a `matrices::long_finite_field<long long P>`.
+
+Třída `matrices::finite_field<T>` představuje konečné těleso, u kterého velikost (prvočíslo P) nastavíme během konstrukce.
+Velikost můžeme být taky nenastavena (reprezentováno pomocí nuly) - s takovouto proměnnou ale nemůžeme provádět aritmetiku, jen přiřazení.
+
+Žádná ze tříd neprovádí kontrolu prvočíselnosti parametru P.
+
+Třídy implementují operace `==`, `!=`, `+`, `-`, `*`, `/`, `+=`, `-=`, `*=`, `/=`, `^`, `^=`, `++` a `--`.
+- `^` znamená umocňování.
+- `++` a `--` jsou suffixové i prefixové.
+- `/` a `/=` - dělení číslem $x$ odpovídá násobení $x^{p - 2}$.
+
+Existuje suffix `_Zp`, který vytvoří `matrices::finite_field<T>` s nenastavenou velikostí - nutné pokud chceme přiřazovat do matic:
 ```
-cd existing_repo
-git remote add origin https://gitlab.mff.cuni.cz/teaching/nprg031/2023-summer/common/student.git
-git branch -M master
-git push -uf origin master
+dynamic_matrix<finite_field<int>> m(3, 3, finite_field<int>(5, 0));
+m = { 1_Zp, 2_Zp, 3_Zp, 4_Zp, 5_Zp, 6_Zp, 7_Zp, 8_Zp, 9_Zp };
 ```
 
-## Integrate with your tools
+### Třída `matrices::fraction<T>`
 
-- [ ] [Set up project integrations](https://gitlab.mff.cuni.cz/teaching/nprg031/2023-summer/common/student/-/settings/integrations)
+Počítání v $\mathbb Q$.
 
-## Collaborate with your team
+Třída si udržuje čitatel a jmenovatel. Po každé operaci zkrátí zlomek na základní tvar.
 
-- [ ] [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-- [ ] [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-- [ ] [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-- [ ] [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-- [ ] [Automatically merge when pipeline succeeds](https://docs.gitlab.com/ee/user/project/merge_requests/merge_when_pipeline_succeeds.html)
+Třída implementuje operace `==`, `!=`, `<`, `<=`, `>`, `>=`, `+`, `-`, `*`, `/`, `+=`, `-=`, `*=`, `/=`, `^`, `^=`, `++` a `--`.
+- `^` znamená umocňování.
+- `++` a `--` jsou suffixové i prefixové.
 
-## Test and Deploy
+Třída implementuje metodu `value<U>()` - pro převod na `float` a `double`.
 
-Use the built-in continuous integration in GitLab.
+### Třída `matrices::assert_error`
 
-- [ ] [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/index.html)
-- [ ] [Analyze your code for known vulnerabilities with Static Application Security Testing(SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-- [ ] [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-- [ ] [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-- [ ] [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
+Výjimka, která je vyhozena při pokusu o neplatnou operaci - přířazení/sečtení/násobení matic špatných rozměrů,
+aritmetika v $\mathbb Z_p$ pro proměnné s různým $p$ atp.
 
-***
+### Třídy `number_utils::bigint` a `number_utils::bigint10`
 
-# Editing this README
+Třída `number_utils::bigint` implementuje aritmetiku s číslem v soustavě o základu $2^32$.
 
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thank you to [makeareadme.com](https://www.makeareadme.com/) for this template.
+Třída `number_utils::bigint10` implementuje aritmetiku s číslem v soustavě o základu $10^9$ - triviální převod do desítkové soustavy.
 
-## Suggestions for a good README
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
+Jsou naimplementovány standardní operátory.
 
-## Name
-Choose a self-explaining name for your project.
+### Třída `number_utils::standard_numbers<T>` a její specializace
 
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
+Slouží k poskytnutí čísel 0, 1 a -1 v type `T` - nutné pro konstrukci jednotkové matice typu např. `dynamic_matrix<finite_field<int>>`.
 
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
+Pokud chcete matici nad nějakým vlastním číselným typem, nejspíš budete muset tuto třídu specializovat.
 
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
+## Adresářová struktura
 
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
+Jak je projekt strukturován.
 
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
+### `src/matrix.hpp`, `src/dynamic_matrix.hpp` a `src/matrix_implementation.hpp`
 
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
+Tyto soubory implementují třídy `matrices::matrix<T, ROWS, COLS>` a `matrices::dynamic_matrix<T>`.
+Soubor `src/matrix_implementation.hpp` obsahuje implementaci Gaussovy eliminace jako template,
+který pak používají třídy `matrices::matrix<T, ROWS, COLS>` a `matrices::dynamic_matrix<T>`.
 
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
+### `src/number_types.hpp`
 
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
+Implementace tříd `matrices::fraction<T>`, `matrices::finite_field<T>` a `matrices::finite_field_template<T, P>`.
 
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
+### `src/assert.hpp` a `src/printing.hpp`
 
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
+Implementace `matrices::assert_error` a operátorů `<<` pro debug výpis na obrazovku.
 
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
+### `src/numbers.hpp`, `src/bigint.hpp` a `src/bigint10.hpp`
 
-## License
-For open source projects, say how it is licensed.
+Implementace `number_utils::standard_numbers<T>`, `number_utils::bigint` a `number_utils::bigint10`.
 
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+### `test/`
+
+Pár testů, které je možné spustit pomocí `make test`.
