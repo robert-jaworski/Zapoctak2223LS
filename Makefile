@@ -1,6 +1,6 @@
 CPP_ARGS = -O2
 
-SRC_FILES = assert dynamic_matrix matrix printing number_types numbers bigint bigint10
+SRC_FILES = assert dynamic_matrix matrix printing number_types numbers bigint bigint10 matrix_implementation
 
 CPP_FILES = $(addprefix src/, $(addsuffix .cpp, $(SRC_FILES)))
 HPP_FILES = $(addprefix src/, $(addsuffix .hpp, $(SRC_FILES)))

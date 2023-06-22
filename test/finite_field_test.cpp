@@ -10,7 +10,8 @@ int run_test() {
     dynamic_matrix<finite_field<int>> m3(3, 3, finite_field<int>(5, 0)), m4(3, 4, finite_field<int>(5, 0));
     m3 = { 1_Zp, 1_Zp, 1_Zp, 0_Zp, 1_Zp, 1_Zp, 0_Zp, 0_Zp, 1_Zp, };
     m4 = { 3_Zp, 0_Zp, 3_Zp, 0_Zp, 3_Zp, 3_Zp, 0_Zp, 0_Zp, 6_Zp, 3_Zp, 3_Zp, 0_Zp, };
-    matrix<int_finite_field<5>, 3, 3> m5({ 0, 1, 0, 2, 0, 0, 2, 1, 1 });
+    matrix<int_finite_field<5>, 3, 3> m5;
+    m5 = { 0, 1, 0, 2, 0, 0, 2, 1, 1 };
 
     finite_field<int> x = 0_Zp, y = 1_Zp, z(5, 3);
     cout << x << endl;

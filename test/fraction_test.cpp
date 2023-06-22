@@ -29,5 +29,11 @@ int run_test() {
     cout << "det(m3) == " << m3.compute_determinant_REF() << endl;
     cout << "m3 ^ -1 == \n" << (m3 ^ -1) << endl;
 
+    fraction<int> a(1, 10);
+    fraction<int> b(2, 10);
+    fraction<int> c = a + b;
+    cout << "0.1  + 0.2  ==         "        << setprecision(30) << (0.1 + 0.2) << endl;
+    cout << "1/10 + 2/10 == " << c << " == " << setprecision(30) << c.value<double>() << endl;
+
     return 0;
 }

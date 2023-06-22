@@ -405,11 +405,11 @@ namespace matrices {
 
         inline void fix() {
             do_assert(!(denom == 0), "Denominator must be non-zero");
-            if (denom < 0) {
+            if (denom < number_utils::get_zero<T>()) {
                 numer = -numer;
                 denom = -denom;
             }
-            T div = number_utils::gcd(numer < 0 ? -numer : numer, denom);
+            T div = number_utils::gcd(numer < number_utils::get_zero<T>() ? -numer : numer, denom);
             numer /= div;
             denom /= div;
         }
@@ -470,6 +470,38 @@ namespace matrices {
 
         inline bool operator!=(const fraction<T>& rhs) const {
             return as_pair() != rhs.as_pair();
+        }
+
+        inline bool operator<(const T& rhs) const {
+            return numer < rhs * denom;
+        }
+
+        inline bool operator<(const fraction<T>& rhs) const {
+            return numer * rhs.denom < rhs.numer * denom;
+        }
+
+        inline bool operator<=(const T& rhs) const {
+            return numer <= rhs * denom;
+        }
+
+        inline bool operator<=(const fraction<T>& rhs) const {
+            return numer * rhs.denom <= rhs.numer * denom;
+        }
+
+        inline bool operator>(const T& rhs) const {
+            return numer > rhs * denom;
+        }
+
+        inline bool operator>(const fraction<T>& rhs) const {
+            return numer * rhs.denom > rhs.numer * denom;
+        }
+
+        inline bool operator>=(const T& rhs) const {
+            return numer >= rhs * denom;
+        }
+
+        inline bool operator>=(const fraction<T>& rhs) const {
+            return numer * rhs.denom >= rhs.numer * denom;
         }
 
         inline fraction<T> operator+(const T& rhs) const {

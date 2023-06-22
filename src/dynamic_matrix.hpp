@@ -3,18 +3,22 @@
 #include <vector>
 #include "assert.hpp"
 #include "numbers.hpp"
+#include "matrix_implementation.hpp"
 
 namespace matrices {
 
     namespace helper {
-        template <typename T> class matrix_indexer;
-        template <typename T> class const_matrix_indexer;
+        template <typename T> class dynamic_matrix_indexer;
+        template <typename T> class const_dynamic_matrix_indexer;
     }
 
     template <typename T>
     class dynamic_matrix {
         const int ROWS, COLS;
         std::vector<T> elements;
+
+        using impl = helper::matrix_impl<T, dynamic_matrix<T>>;
+        friend impl;
 
         inline const T& get_elem(int row, int col) const {
             return elements[row * COLS + col];
@@ -95,12 +99,12 @@ namespace matrices {
             return const_cast<T&>(const_cast<const dynamic_matrix<T>*>(this)->element(row, col));
         }
 
-        inline helper::matrix_indexer<T> operator[](int row) {
-            return helper::matrix_indexer<T>(*this, row);
+        inline helper::dynamic_matrix_indexer<T> operator[](int row) {
+            return helper::dynamic_matrix_indexer<T>(*this, row);
         }
 
-        inline helper::const_matrix_indexer<T> operator[](int row) const {
-            return helper::matrix_indexer<T>(*this, row);
+        inline helper::const_dynamic_matrix_indexer<T> operator[](int row) const {
+            return helper::dynamic_matrix_indexer<T>(*this, row);
         }
 
         inline T& operator[](std::pair<int, int> index) {
@@ -153,6 +157,10 @@ namespace matrices {
 
         bool operator==(const dynamic_matrix<T>& rhs) const {
             return dimension() == rhs.dimension() && elements == rhs.elements;
+        }
+
+        bool operator!=(const dynamic_matrix<T>& rhs) const {
+            return dimension() != rhs.dimension() || elements != rhs.elements;
         }
 
         dynamic_matrix<T> operator+(const dynamic_matrix<T>& rhs) const {
@@ -215,77 +223,24 @@ namespace matrices {
         dynamic_matrix<T> operator*(const dynamic_matrix<T>& rhs) const {
             check_mult_dimen(rhs);
             dynamic_matrix<T> out(ROWS, rhs.COLS, number_utils::get_zero<T>(elements[0]));
-            for (int i = 0; i < ROWS; i++) {
-                for (int j = 0; j < rhs.COLS; j++) {
-                    for (int k = 0; k < COLS; k++) {
-                        out.get_elem(i, j) += get_elem(i, k) * rhs.get_elem(k, j);
-                    }
-                }
-            }
+            impl::multiply(out, *this, rhs);
             return out;
         }
 
         dynamic_matrix<T>& operator*=(const dynamic_matrix<T>& rhs) {
             check_mult_dimen(rhs);
-            rhs.assert_square();
-            if (this == &rhs) {
-                *this = *this * rhs;
-                return *this;
-            }
-
-            for (int i = 0; i < ROWS; i++) {
-                std::vector<T> temp(COLS, number_utils::get_zero<T>(elements[0]));
-                for (int j = 0; j < COLS; j++) {
-                    for (int k = 0; k < COLS; k++) {
-                        temp[j] += get_elem(i, k) * rhs.get_elem(k, j);
-                    }
-                }
-                for (int j = 0; j < COLS; j++) {
-                    get_elem(i, j) = temp[j];
-                }
-            }
+            impl::multiply_from_right(*this, rhs);
             return *this;
         }
 
         dynamic_matrix<T>& multiply_from_left(const dynamic_matrix<T>& lhs) {
             lhs.check_mult_dimen(*this);
-            lhs.assert_square();
-            if (this == &lhs) {
-                *this = lhs * *this;
-                return *this;
-            }
-
-            for (int j = 0; j < COLS; j++) {
-                std::vector<T> temp(ROWS, number_utils::get_zero<T>());
-                for (int i = 0; i < ROWS; i++) {
-                    for (int k = 0; k < COLS; k++) {
-                        temp[i] += get_elem(i, k) * lhs.get_elem(k, j);
-                    }
-                }
-                for (int i = 0; i < ROWS; i++) {
-                    get_elem(i, j) = temp[i];
-                }
-            }
+            impl::multiply_from_left(lhs, *this);
             return *this;
         }
 
         dynamic_matrix<T> operator^(int power) const {
-            assert_square();
-            if (power == 0)
-                return identity(ROWS, elements[0]);
-            if (power == 1)
-                return *this;
-            
-            if (power < 0) {
-                std::pair<dynamic_matrix<T>, bool> RREF_inverse = compute_inverse_RREF();
-                do_assert(RREF_inverse.second, "Cannot compute the inverse matrix - singular");
-                return RREF_inverse.first ^ -power;
-            }
-            dynamic_matrix<T> half = *this ^ (power / 2);
-            half *= half;
-            if (power % 2)
-                half *= *this;
-            return half;
+            return impl::power(*this, power);
         }
 
         inline dynamic_matrix<T>& operator^=(int power) {
@@ -314,43 +269,7 @@ namespace matrices {
         }
 
         std::pair<int, T> compute_REF_rank_det() {
-            int i, p, swaps = 0;
-            for (i = 0, p = 0; i < ROWS && p < COLS; i++, p++) {
-                while (get_elem(i, p) == number_utils::get_zero<T>(elements[0])) {
-                    int j;
-                    for (j = i + 1; j < ROWS; j++) {
-                        if (get_elem(j, p) != number_utils::get_zero<T>(elements[0])) {
-                            swaps++;
-                            for (int k = p; k < COLS; k++) {
-                                std::swap(get_elem(i, k), get_elem(j, k));
-                            }
-                            break;
-                        }
-                    }
-                    if (j >= ROWS)
-                        p++;
-                    if (p >= COLS) {
-                        T det = elements[0];
-                        for (int i = 1; i < ROWS && i < COLS; i++) {
-                            det *= get_elem(i, i);
-                        }
-                        return std::make_pair(i, swaps % 2 ? -det : det);
-                    }
-                }
-                for (int j = i + 1; j < ROWS; j++) {
-                    if (get_elem(j, p) != number_utils::get_zero<T>(elements[0])) {
-                        T mult = get_elem(j, p) / get_elem(i, p);
-                        for (int k = p; k < COLS; k++) {
-                            get_elem(j, k) -= mult * get_elem(i, k);
-                        }
-                    }
-                }
-            }
-            T det = elements[0];
-            for (int i = 1; i < ROWS && i < COLS; i++) {
-                det *= get_elem(i, i);
-            }
-            return std::make_pair(i, swaps % 2 ? -det : det);
+            return impl::compute_REF_rank_det(*this);
         }
 
         inline dynamic_matrix<T>& do_REF() {
@@ -369,37 +288,7 @@ namespace matrices {
         }
 
         int compute_RREF_and_rank() {
-            int i, p;
-            for (i = 0, p = 0; i < ROWS && p < COLS; i++, p++) {
-                while (get_elem(i, p) == number_utils::get_zero<T>(elements[0])) {
-                    int j;
-                    for (j = i + 1; j < ROWS; j++) {
-                        if (get_elem(j, p) != number_utils::get_zero<T>(elements[0])) {
-                            for (int k = p; k < COLS; k++) {
-                                std::swap(get_elem(i, k), get_elem(j, k));
-                            }
-                            break;
-                        }
-                    }
-                    if (j >= ROWS)
-                        p++;
-                    if (p >= COLS)
-                        return i;
-                }
-                for (int j = 0; j < ROWS; j++) {
-                    if (j != i && get_elem(j, p) != number_utils::get_zero<T>(elements[0])) {
-                        T mult = get_elem(j, p) / get_elem(i, p);
-                        for (int k = p; k < COLS; k++) {
-                            get_elem(j, k) -= mult * get_elem(i, k);
-                        }
-                    }
-                }
-                for (int k = p + 1; k < COLS; k++) {
-                    get_elem(i, k) /= get_elem(i, p);
-                }
-                get_elem(i, p) /= get_elem(i, p);
-            }
-            return i;
+            return impl::compute_RREF_and_rank(*this);
         }
         
         inline dynamic_matrix<T>& do_RREF() {
@@ -413,43 +302,7 @@ namespace matrices {
         }
 
         std::pair<dynamic_matrix<T>, bool> compute_inverse_RREF() const {
-            assert_square();
-            dynamic_matrix<T> copy = *this, inverse = identity(ROWS, elements[0]);
-            int i, p;
-            for (i = 0, p = 0; i < ROWS && p < COLS; i++, p++) {
-                while (copy.get_elem(i, p) == number_utils::get_zero<T>(elements[0])) {
-                    int j;
-                    for (j = i + 1; j < ROWS; j++) {
-                        if (copy.get_elem(j, p) != number_utils::get_zero<T>(elements[0])) {
-                            for (int k = p; k < COLS; k++) {
-                                std::swap(copy.get_elem(i, k), copy.get_elem(j, k));
-                                std::swap(inverse.get_elem(i, k), inverse.get_elem(j, k));
-                            }
-                            break;
-                        }
-                    }
-                    if (j >= ROWS)
-                        p++;
-                    if (p >= COLS)
-                        return std::make_pair(inverse, false);
-                }
-                for (int j = 0; j < ROWS; j++) {
-                    if (j != i && copy.get_elem(j, p) != number_utils::get_zero<T>(elements[0])) {
-                        T mult = copy.get_elem(j, p) / copy.get_elem(i, p);
-                        for (int k = p; k < COLS; k++) {
-                            copy.get_elem(j, k) -= mult * copy.get_elem(i, k);
-                            inverse.get_elem(j, k) -= mult * inverse.get_elem(i, k);
-                        }
-                    }
-                }
-                for (int k = p + 1; k < COLS; k++) {
-                    copy.get_elem(i, k) /= copy.get_elem(i, p);
-                    inverse.get_elem(i, k) /= inverse.get_elem(i, p);
-                }
-                copy.get_elem(i, p) /= copy.get_elem(i, p);
-                inverse.get_elem(i, p) /= inverse.get_elem(i, p);
-            }
-            return std::make_pair(inverse, i == ROWS);
+            return impl::compute_inverse_RREF(*this);
         }
 
         inline T trace() const {
@@ -476,12 +329,12 @@ namespace matrices {
     namespace helper {
 
         template <typename T>
-        class const_matrix_indexer {
+        class const_dynamic_matrix_indexer {
             const dynamic_matrix<T>& currentMatrix;
             const int currentRow;
         
         public:
-            inline const_matrix_indexer(const dynamic_matrix<T>& m, int row) : currentMatrix(m), currentRow(row) { }
+            inline const_dynamic_matrix_indexer(const dynamic_matrix<T>& m, int row) : currentMatrix(m), currentRow(row) { }
 
             inline const T& operator[](int col) const {
                 return currentMatrix.element(currentRow, col);
@@ -489,12 +342,12 @@ namespace matrices {
         };
 
         template <typename T>
-        class matrix_indexer {
+        class dynamic_matrix_indexer {
             dynamic_matrix<T>& currentMatrix;
             const int currentRow;
         
         public:
-            inline matrix_indexer(dynamic_matrix<T>& m, int row) : currentMatrix(m), currentRow(row) { }
+            inline dynamic_matrix_indexer(dynamic_matrix<T>& m, int row) : currentMatrix(m), currentRow(row) { }
 
             inline T& operator[](int col) const {
                 return currentMatrix.element(currentRow, col);
