@@ -5,7 +5,7 @@ using namespace std;
 using namespace matrices;
 
 int run_test() {
-    vector<matrix<double>> m = {
+    vector<dynamic_matrix<double>> m = {
         {2, 2, { 1, 2, 1, 2 }},
         {2, 2, { {1, 2}, {1, 2} }},
         {2, 2, 0},

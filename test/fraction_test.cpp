@@ -6,9 +6,9 @@ using namespace matrices;
 using namespace number_utils;
 
 int run_test() {
-    fixed_matrix<double, 3, 3> m1({ 1, 2, 3, 4, 5, 6, 7, 8, 10 });
-    fixed_matrix<fraction<int>, 3, 3> m2({ 1, 2, 3, 4, 5, 6, 7, 8, 10 });
-    fixed_matrix<fraction<bigint10>, 3, 3> m3({ 1_BI10, 2_BI10, 3_BI10, 4_BI10, 5_BI10, 6_BI10, 7_BI10, 8_BI10, 10_BI10 });
+    matrix<double, 3, 3> m1({ 1, 2, 3, 4, 5, 6, 7, 8, 10 });
+    matrix<fraction<int>, 3, 3> m2({ 1, 2, 3, 4, 5, 6, 7, 8, 10 });
+    matrix<fraction<bigint10>, 3, 3> m3({ 1_BI10, 2_BI10, 3_BI10, 4_BI10, 5_BI10, 6_BI10, 7_BI10, 8_BI10, 10_BI10 });
 
     cout << "rank(m1) == " << m1.compute_rank() << endl;
     cout << "m1 ==\n" << m1 << endl;

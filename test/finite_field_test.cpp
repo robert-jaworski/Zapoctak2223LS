@@ -5,12 +5,12 @@ using namespace std;
 using namespace matrices;
 
 int run_test() {
-    fixed_matrix<int_finite_field<5>, 3, 3> m1({ 1, 1, 1, 0, 0, 1, 0, 1, 1 });
-    fixed_matrix<long_finite_field<5>, 3, 4> m2({ 3, 0, 3, 0, 3, 3, 0, 0, 6, 3, 3, 0 });
-    matrix<finite_field<int>> m3(3, 3, finite_field<int>(5, 0)), m4(3, 4, finite_field<int>(5, 0));
+    matrix<int_finite_field<5>, 3, 3> m1({ 1, 1, 1, 0, 0, 1, 0, 1, 1 });
+    matrix<long_finite_field<5>, 3, 4> m2({ 3, 0, 3, 0, 3, 3, 0, 0, 6, 3, 3, 0 });
+    dynamic_matrix<finite_field<int>> m3(3, 3, finite_field<int>(5, 0)), m4(3, 4, finite_field<int>(5, 0));
     m3 = { 1_Zp, 1_Zp, 1_Zp, 0_Zp, 1_Zp, 1_Zp, 0_Zp, 0_Zp, 1_Zp, };
     m4 = { 3_Zp, 0_Zp, 3_Zp, 0_Zp, 3_Zp, 3_Zp, 0_Zp, 0_Zp, 6_Zp, 3_Zp, 3_Zp, 0_Zp, };
-    fixed_matrix<int_finite_field<5>, 3, 3> m5({ 0, 1, 0, 2, 0, 0, 2, 1, 1 });
+    matrix<int_finite_field<5>, 3, 3> m5({ 0, 1, 0, 2, 0, 0, 2, 1, 1 });
 
     finite_field<int> x = 0_Zp, y = 1_Zp, z(5, 3);
     cout << x << endl;

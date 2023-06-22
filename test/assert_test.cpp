@@ -5,9 +5,9 @@ using namespace std;
 using namespace matrices;
 
 int run_test() {
-    matrix<double> m1(2, 3), m2(3, 2);
+    dynamic_matrix<double> m1(2, 3), m2(3, 2);
     try {
-        matrix<double> m(0, -1);
+        dynamic_matrix<double> m(0, -1);
         return 1;
     } catch (exceptions::assert_error& e) { }
 

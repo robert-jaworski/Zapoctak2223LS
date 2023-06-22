@@ -5,10 +5,10 @@ using namespace std;
 using namespace matrices;
 
 int run_test() {
-    matrix<double> m1(3, 3, { 1, 1, 1, 0, 0, 1, 0, 1, 1 }), m2(3, 4, { 3, 0, 3, 0, 3, 3, 0, 0, 6, 3, 3, 0 });
-    fixed_matrix<double, 3, 3> m3({ 1, 1, 1, 0, 1, 1, 0, 0, 1 });
-    fixed_matrix<double, 3, 4> m4({ 3, 0, 3, 0, 3, 3, 0, 0, 6, 3, 3, 0 });
-    fixed_matrix<double, 3, 3> m5({ 0, 1, 0, 2, 0, 0, 2, 1, 1 });
+    dynamic_matrix<double> m1(3, 3, { 1, 1, 1, 0, 0, 1, 0, 1, 1 }), m2(3, 4, { 3, 0, 3, 0, 3, 3, 0, 0, 6, 3, 3, 0 });
+    matrix<double, 3, 3> m3({ 1, 1, 1, 0, 1, 1, 0, 0, 1 });
+    matrix<double, 3, 4> m4({ 3, 0, 3, 0, 3, 3, 0, 0, 6, 3, 3, 0 });
+    matrix<double, 3, 3> m5({ 0, 1, 0, 2, 0, 0, 2, 1, 1 });
 
     cout << "rank(m1) == " << m1.compute_rank() << endl;
     cout << "m1 ==\n" << m1 << endl;

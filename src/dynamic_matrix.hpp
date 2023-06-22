@@ -1,45 +1,39 @@
 #pragma once
 
 #include <vector>
-#include <array>
 #include "assert.hpp"
-#include "matrix.hpp"
+#include "numbers.hpp"
 
 namespace matrices {
 
     namespace helper {
-        template <typename T, int ROWS, int COLS> class fixed_matrix_indexer;
-        template <typename T, int ROWS, int COLS> class const_fixed_matrix_indexer;
+        template <typename T> class matrix_indexer;
+        template <typename T> class const_matrix_indexer;
     }
 
-    template <typename T, int ROWS, int COLS>
-    class fixed_matrix;
-
-    template <typename T, int SIZE>
-    fixed_matrix<T, SIZE, SIZE> fixed_matrix_identity();
-
-    template <typename T, int SIZE>
-    fixed_matrix<T, SIZE, SIZE> fixed_matrix_identity(const T& sample);
-
-    template <typename T, int ROWS, int COLS>
-    class fixed_matrix {
-        static_assert(ROWS > 0 && COLS > 0, "Matrix size must be positive");
-        std::array<T, ROWS * COLS> elements;
+    template <typename T>
+    class dynamic_matrix {
+        const int ROWS, COLS;
+        std::vector<T> elements;
 
         inline const T& get_elem(int row, int col) const {
             return elements[row * COLS + col];
         }
 
         inline T& get_elem(int row, int col) {
-            return const_cast<T&>(const_cast<const fixed_matrix<T, ROWS, COLS>*>(this)->get_elem(row, col));
+            return const_cast<T&>(const_cast<const dynamic_matrix<T>*>(this)->get_elem(row, col));
         }
 
         inline void check_index(int row, int col) const {
             do_assert(0 <= row && row < ROWS && 0 <= col && col < COLS, "Invalid element index");
         }
 
+        inline void check_dimen(const dynamic_matrix<T>& m) const {
+            do_assert(dimension() == m.dimension(), "Incompatible matrix dimensions");
+        }
+
         inline void check_dimen(const std::initializer_list<T>& v) const {
-            do_assert(elements.size() == v.size(), "Wrong vector size for matrix assignment");
+            do_assert(ROWS * COLS == v.size(), "Wrong vector size for matrix assignment");
         }
 
         inline void check_dimen(const std::initializer_list<std::initializer_list<T>>& v) const {
@@ -49,27 +43,35 @@ namespace matrices {
             }
         }
 
+        inline void check_mult_dimen(const dynamic_matrix<T>& m) const {
+            do_assert(COLS == m.ROWS, "Incompatible matrix dimensions for multiplication");
+        }
+
         inline void assert_square() const {
-            static_assert(ROWS == COLS, "Must be a square matrix");
+            do_assert(ROWS == COLS, "Must be a square matrix");
         }
 
     public:
-        fixed_matrix() = default;
-
-        fixed_matrix(const T& fill) {
-            elements.fill(fill);
+        inline dynamic_matrix(int rows, int columns) : ROWS(rows), COLS(columns) {
+            do_assert(ROWS > 0 && COLS > 0, "Matrix size must be positive");
+            elements.resize(ROWS * COLS);
         }
 
-        inline fixed_matrix(const std::initializer_list<T>& elems) {
+        inline dynamic_matrix(int rows, int columns, const T& fill) : ROWS(rows), COLS(columns) {
+            do_assert(ROWS > 0 && COLS > 0, "Matrix size must be positive");
+            elements.resize(ROWS * COLS, fill);
+        }
+
+        inline dynamic_matrix(int rows, int columns, const std::initializer_list<T>& elems) : ROWS(rows), COLS(columns) {
+            do_assert(ROWS > 0 && COLS > 0, "Matrix size must be positive");
+            check_dimen(elems);
+            elements = elems;
+        }
+
+        inline dynamic_matrix(int rows, int columns, const std::initializer_list<std::initializer_list<T>>& elems) : ROWS(rows), COLS(columns) {
+            do_assert(ROWS > 0 && COLS > 0, "Matrix size must be positive");
+            elements.resize(ROWS * COLS);
             *this = elems;
-        }
-
-        inline fixed_matrix(const std::initializer_list<std::initializer_list<T>>& elems) {
-            *this = elems;
-        }
-
-        inline operator matrix<T>() const {
-            return matrix<T>(ROWS, COLS, elements);
         }
 
         inline std::pair<int, int> dimension() const {
@@ -90,32 +92,54 @@ namespace matrices {
         }
 
         inline T& element(int row, int col) {
-            return const_cast<T&>(const_cast<const fixed_matrix<T, ROWS, COLS>*>(this)->element(row, col));
+            return const_cast<T&>(const_cast<const dynamic_matrix<T>*>(this)->element(row, col));
         }
 
-        inline helper::fixed_matrix_indexer<T, ROWS, COLS> operator[](int row) {
-            return helper::fixed_matrix_indexer<T, ROWS, COLS>(*this, row);
+        inline helper::matrix_indexer<T> operator[](int row) {
+            return helper::matrix_indexer<T>(*this, row);
         }
 
-        inline helper::const_fixed_matrix_indexer<T, ROWS, COLS> operator[](int row) const {
-            return helper::fixed_matrix_indexer<T, ROWS, COLS>(*this, row);
+        inline helper::const_matrix_indexer<T> operator[](int row) const {
+            return helper::matrix_indexer<T>(*this, row);
         }
 
-        fixed_matrix<T, ROWS, COLS>& operator=(const fixed_matrix<T, ROWS, COLS>& rhs) {
+        inline T& operator[](std::pair<int, int> index) {
+            return element(index.first, index.second);
+        }
+
+        inline const T& operator[](std::pair<int, int> index) const {
+            return element(index.first, index.second);
+        }
+
+        static dynamic_matrix<T> identity(int size) {
+            dynamic_matrix<T> out(size, size, number_utils::get_zero<T>());
+            for (int i = 0; i < size; i++) {
+                out[i][i] = number_utils::get_one<T>();
+            }
+            return out;
+        }
+
+        static dynamic_matrix<T> identity(int size, const T& sample) {
+            dynamic_matrix<T> out(size, size, number_utils::get_zero<T>(sample));
+            for (int i = 0; i < size; i++) {
+                out[i][i] = number_utils::get_one<T>(sample);
+            }
+            return out;
+        }
+
+        dynamic_matrix<T>& operator=(const dynamic_matrix<T>& rhs) {
+            check_dimen(rhs);
             elements = rhs.elements;
             return *this;
         }
 
-        fixed_matrix<T, ROWS, COLS>& operator=(const std::initializer_list<T>& rhs) {
+        dynamic_matrix<T>& operator=(const std::initializer_list<T>& rhs) {
             check_dimen(rhs);
-            const T *it = rhs.begin();
-            for (int i = 0; i < elements.size(); i++, it++) {
-                elements[i] = *it;
-            }
+            elements = rhs;
             return *this;
         }
 
-        fixed_matrix<T, ROWS, COLS>& operator=(const std::initializer_list<std::initializer_list<T>>& rhs) {
+        dynamic_matrix<T>& operator=(const std::initializer_list<std::initializer_list<T>>& rhs) {
             check_dimen(rhs);
             const std::initializer_list<T> *it = rhs.begin();
             for (int i = 0, k = 0; i < ROWS; i++, it++) {
@@ -127,69 +151,72 @@ namespace matrices {
             return *this;
         }
 
-        bool operator==(const fixed_matrix<T, ROWS, COLS>& rhs) const {
-            return elements == rhs.elements;
+        bool operator==(const dynamic_matrix<T>& rhs) const {
+            return dimension() == rhs.dimension() && elements == rhs.elements;
         }
 
-        fixed_matrix<T, ROWS, COLS> operator+(const fixed_matrix<T, ROWS, COLS>& rhs) const {
-            fixed_matrix<T, ROWS, COLS> out = *this;
+        dynamic_matrix<T> operator+(const dynamic_matrix<T>& rhs) const {
+            check_dimen(rhs);
+            dynamic_matrix<T> out(ROWS, COLS);
             for (size_t i = 0; i < elements.size(); i++) {
                 out.elements[i] = elements[i] + rhs.elements[i];
             }
             return out;
         }
 
-        fixed_matrix<T, ROWS, COLS>& operator+=(const fixed_matrix<T, ROWS, COLS>& rhs) {
+        dynamic_matrix<T>& operator+=(const dynamic_matrix<T>& rhs) {
+            check_dimen(rhs);
             for (size_t i = 0; i < elements.size(); i++) {
                 elements[i] += rhs.elements[i];
             }
             return *this;
         }
 
-        fixed_matrix<T, ROWS, COLS> operator-() const {
-            fixed_matrix<T, ROWS, COLS> out = *this;
+        dynamic_matrix<T> operator-() const {
+            dynamic_matrix<T> out(ROWS, COLS);
             for (size_t i = 0; i < elements.size(); i++) {
                 out.elements[i] = -elements[i];
             }
             return out;
         }
 
-        fixed_matrix<T, ROWS, COLS> operator-(const fixed_matrix<T, ROWS, COLS>& rhs) const {
-            fixed_matrix<T, ROWS, COLS> out = *this;
+        dynamic_matrix<T> operator-(const dynamic_matrix<T>& rhs) const {
+            check_dimen(rhs);
+            dynamic_matrix<T> out(ROWS, COLS);
             for (size_t i = 0; i < elements.size(); i++) {
                 out.elements[i] = elements[i] - rhs.elements[i];
             }
             return out;
         }
 
-        fixed_matrix<T, ROWS, COLS>& operator-=(const fixed_matrix<T, ROWS, COLS>& rhs) {
+        dynamic_matrix<T>& operator-=(const dynamic_matrix<T>& rhs) {
+            check_dimen(rhs);
             for (size_t i = 0; i < elements.size(); i++) {
                 elements[i] -= rhs.elements[i];
             }
             return *this;
         }
 
-        fixed_matrix<T, ROWS, COLS> operator*(const T& rhs) const {
-            fixed_matrix<T, ROWS, COLS> out;
+        dynamic_matrix<T> operator*(const T& rhs) const {
+            dynamic_matrix<T> out(ROWS, COLS);
             for (size_t i = 0; i < elements.size(); i++) {
                 out.elements[i] = elements[i] * rhs;
             }
             return out;
         }
 
-        fixed_matrix<T, ROWS, COLS>& operator*=(const T& rhs) {
+        dynamic_matrix<T>& operator*=(const T& rhs) {
             for (size_t i = 0; i < elements.size(); i++) {
                 elements[i] *= rhs;
             }
             return *this;
         }
 
-        template <int rhsCOLS>
-        fixed_matrix<T, ROWS, rhsCOLS> operator*(const fixed_matrix<T, COLS, rhsCOLS>& rhs) const {
-            fixed_matrix<T, ROWS, rhsCOLS> out;
+        dynamic_matrix<T> operator*(const dynamic_matrix<T>& rhs) const {
+            check_mult_dimen(rhs);
+            dynamic_matrix<T> out(ROWS, rhs.COLS, number_utils::get_zero<T>(elements[0]));
             for (int i = 0; i < ROWS; i++) {
-                for (int j = 0; j < rhsCOLS; j++) {
-                    out.get_elem(i, j) -= out.get_elem(i, j);
+                for (int j = 0; j < rhs.COLS; j++) {
                     for (int k = 0; k < COLS; k++) {
                         out.get_elem(i, j) += get_elem(i, k) * rhs.get_elem(k, j);
                     }
@@ -198,7 +225,9 @@ namespace matrices {
             return out;
         }
 
-        fixed_matrix<T, ROWS, COLS>& operator*=(const fixed_matrix<T, COLS, COLS>& rhs) {
+        dynamic_matrix<T>& operator*=(const dynamic_matrix<T>& rhs) {
+            check_mult_dimen(rhs);
+            rhs.assert_square();
             if (this == &rhs) {
                 *this = *this * rhs;
                 return *this;
@@ -218,14 +247,16 @@ namespace matrices {
             return *this;
         }
 
-        fixed_matrix<T, ROWS, COLS>& multiply_from_left(const fixed_matrix<T, ROWS, ROWS>& lhs) {
+        dynamic_matrix<T>& multiply_from_left(const dynamic_matrix<T>& lhs) {
+            lhs.check_mult_dimen(*this);
+            lhs.assert_square();
             if (this == &lhs) {
                 *this = lhs * *this;
                 return *this;
             }
 
             for (int j = 0; j < COLS; j++) {
-                std::vector<T> temp(ROWS, number_utils::get_zero<T>(elements[0]));
+                std::vector<T> temp(ROWS, number_utils::get_zero<T>());
                 for (int i = 0; i < ROWS; i++) {
                     for (int k = 0; k < COLS; k++) {
                         temp[i] += get_elem(i, k) * lhs.get_elem(k, j);
@@ -238,7 +269,31 @@ namespace matrices {
             return *this;
         }
 
-        fixed_matrix<T, COLS, ROWS>& transpose_self() {
+        dynamic_matrix<T> operator^(int power) const {
+            assert_square();
+            if (power == 0)
+                return identity(ROWS, elements[0]);
+            if (power == 1)
+                return *this;
+            
+            if (power < 0) {
+                std::pair<dynamic_matrix<T>, bool> RREF_inverse = compute_inverse_RREF();
+                do_assert(RREF_inverse.second, "Cannot compute the inverse matrix - singular");
+                return RREF_inverse.first ^ -power;
+            }
+            dynamic_matrix<T> half = *this ^ (power / 2);
+            half *= half;
+            if (power % 2)
+                half *= *this;
+            return half;
+        }
+
+        inline dynamic_matrix<T>& operator^=(int power) {
+            *this = *this ^ power;
+            return *this;
+        }
+
+        dynamic_matrix<T>& transpose_self() {
             assert_square();
             for (int i = 0; i < ROWS; i++) {
                 for (int j = 0; j < i; j++) {
@@ -248,11 +303,11 @@ namespace matrices {
             return *this;
         }
 
-        fixed_matrix<T, COLS, ROWS> transpose() const {
-            fixed_matrix<T, COLS, ROWS> out;
+        dynamic_matrix<T> transpose() const {
+            dynamic_matrix<T> out(COLS, ROWS);
             for (int i = 0; i < ROWS; i++) {
                 for (int j = 0; j < COLS; j++) {
-                    out.element(j, i) = get_elem(i, j);
+                    out.get_elem(j, i) = get_elem(i, j);
                 }
             }
             return out;
@@ -298,18 +353,18 @@ namespace matrices {
             return std::make_pair(i, swaps % 2 ? -det : det);
         }
 
-        inline fixed_matrix<T, ROWS, COLS>& do_REF() {
+        inline dynamic_matrix<T>& do_REF() {
             compute_REF_rank_det();
             return *this;
         }
 
-        inline fixed_matrix<T, ROWS, COLS> get_REF() const {
-            fixed_matrix<T, ROWS, COLS> out = *this;
+        inline dynamic_matrix<T> get_REF() const {
+            dynamic_matrix<T> out = *this;
             return out.do_REF();
         }
 
         inline int compute_rank() {
-            fixed_matrix<T, ROWS, COLS> copy = *this;
+            dynamic_matrix<T> copy = *this;
             return copy.compute_REF_rank_det().first;
         }
 
@@ -347,19 +402,19 @@ namespace matrices {
             return i;
         }
         
-        inline fixed_matrix<T, ROWS, COLS>& do_RREF() {
+        inline dynamic_matrix<T>& do_RREF() {
             compute_RREF_and_rank();
             return *this;
         }
 
-        inline fixed_matrix<T, ROWS, COLS> get_RREF() const {
-            fixed_matrix<T, ROWS, COLS> out = *this;
+        inline dynamic_matrix<T> get_RREF() const {
+            dynamic_matrix<T> out = *this;
             return out.do_RREF();
         }
 
-        inline std::pair<fixed_matrix<T, ROWS, COLS>, bool> compute_inverse_RREF() const {
+        std::pair<dynamic_matrix<T>, bool> compute_inverse_RREF() const {
             assert_square();
-            fixed_matrix<T, ROWS, COLS> copy = *this, inverse = fixed_matrix_identity<T, ROWS>(elements[0]);
+            dynamic_matrix<T> copy = *this, inverse = identity(ROWS, elements[0]);
             int i, p;
             for (i = 0, p = 0; i < ROWS && p < COLS; i++, p++) {
                 while (copy.get_elem(i, p) == number_utils::get_zero<T>(elements[0])) {
@@ -408,81 +463,38 @@ namespace matrices {
 
         inline T compute_determinant_REF() const {
             assert_square();
-            fixed_matrix<T, ROWS, COLS> copy = *this;
+            dynamic_matrix<T> copy = *this;
             return copy.compute_REF_rank_det().second;
         }
     };
 
-    template <typename T, int SIZE>
-    fixed_matrix<T, SIZE, SIZE> fixed_matrix_identity() {
-        fixed_matrix<T, SIZE, SIZE> out(number_utils::get_zero<T>());
-        for (int i = 0; i < SIZE; i++) {
-            out[i][i] = number_utils::get_one<T>();
-        }
-        return out;
-    }
-
-    template <typename T, int SIZE>
-    fixed_matrix<T, SIZE, SIZE> fixed_matrix_identity(const T& sample) {
-        fixed_matrix<T, SIZE, SIZE> out(number_utils::get_zero<T>(sample));
-        for (int i = 0; i < SIZE; i++) {
-            out[i][i] = number_utils::get_one<T>(sample);
-        }
-        return out;
-    }
-
-    template <typename T, int ROWS, int COLS>
-    inline fixed_matrix<T, ROWS, COLS> operator*(const T& lhs, const fixed_matrix<T, ROWS, COLS>& rhs) {
+    template <typename T>
+    inline dynamic_matrix<T> operator*(const T& lhs, const dynamic_matrix<T>& rhs) {
         return rhs * lhs;
-    }
-
-    template <typename T, int SIZE>
-    fixed_matrix<T, SIZE, SIZE> operator^(const fixed_matrix<T, SIZE, SIZE>& lhs, int power) {
-        if (power == 0)
-            return fixed_matrix_identity<T, SIZE>(lhs.element(0, 0));
-        if (power == 1)
-            return lhs;
-        
-        if (power < 0) {
-            std::pair<fixed_matrix<T, SIZE, SIZE>, bool> RREF_inverse = lhs.compute_inverse_RREF();
-            do_assert(RREF_inverse.second, "Cannot compute the inverse matrix - singular");
-            return RREF_inverse.first ^ -power;
-        }
-        fixed_matrix<T, SIZE, SIZE> half = lhs ^ (power / 2);
-        half *= half;
-        if (power % 2)
-            half *= lhs;
-        return half;
-    }
-
-    template <typename T, int SIZE>
-    inline fixed_matrix<T, SIZE, SIZE> operator^=(const fixed_matrix<T, SIZE, SIZE>& lhs, int power) {
-        lhs = lhs ^ power;
-        return lhs;
     }
 
     namespace helper {
 
-        template <typename T, int ROWS, int COLS>
-        class const_fixed_matrix_indexer {
-            const fixed_matrix<T, ROWS, COLS>& currentMatrix;
+        template <typename T>
+        class const_matrix_indexer {
+            const dynamic_matrix<T>& currentMatrix;
             const int currentRow;
         
         public:
-            inline const_fixed_matrix_indexer(const fixed_matrix<T, ROWS, COLS>& m, int row) : currentMatrix(m), currentRow(row) { }
+            inline const_matrix_indexer(const dynamic_matrix<T>& m, int row) : currentMatrix(m), currentRow(row) { }
 
             inline const T& operator[](int col) const {
                 return currentMatrix.element(currentRow, col);
             }
         };
 
-        template <typename T, int ROWS, int COLS>
-        class fixed_matrix_indexer {
-            fixed_matrix<T, ROWS, COLS>& currentMatrix;
+        template <typename T>
+        class matrix_indexer {
+            dynamic_matrix<T>& currentMatrix;
             const int currentRow;
         
         public:
-            inline fixed_matrix_indexer(fixed_matrix<T, ROWS, COLS>& m, int row) : currentMatrix(m), currentRow(row) { }
+            inline matrix_indexer(dynamic_matrix<T>& m, int row) : currentMatrix(m), currentRow(row) { }
 
             inline T& operator[](int col) const {
                 return currentMatrix.element(currentRow, col);

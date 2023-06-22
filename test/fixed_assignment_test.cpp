@@ -5,7 +5,7 @@ using namespace std;
 using namespace matrices;
 
 int run_test() {
-    fixed_matrix<double, 3, 3> m1(0), m2;
+    matrix<double, 3, 3> m1(0), m2;
 
     cout << "m1 == \n";
     cout << m1 << endl;
@@ -28,7 +28,7 @@ int run_test() {
     cout << "m3 == \n";
     cout << m3 << endl;
 
-    fixed_matrix<double, 2, 3> rect({ { 1, 2, 3 }, { 4, 5, 6 } });
+    matrix<double, 2, 3> rect({ { 1, 2, 3 }, { 4, 5, 6 } });
     cout << rect << rect.transpose() << endl;
 
     return 0;

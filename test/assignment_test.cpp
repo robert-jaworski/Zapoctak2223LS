@@ -5,7 +5,7 @@ using namespace std;
 using namespace matrices;
 
 int run_test() {
-    matrix<double> m1(3, 3, 0), m2(3, 3);
+    dynamic_matrix<double> m1(3, 3, 0), m2(3, 3);
 
     cout << "m1 == \n";
     cout << m1 << endl;
@@ -24,11 +24,11 @@ int run_test() {
     cout << "m2[0][0] := 1\n";
     cout << "const m3 := m2\n" << endl;
 
-    const matrix<double> m3 = m2;
+    const dynamic_matrix<double> m3 = m2;
     cout << "m3 == \n";
     cout << m3 << endl;
 
-    matrix<double> rect(2, 3, { { 1, 2, 3 }, { 4, 5, 6 } });
+    dynamic_matrix<double> rect(2, 3, { { 1, 2, 3 }, { 4, 5, 6 } });
     cout << rect << rect.transpose() << endl;
     
     return 0;
