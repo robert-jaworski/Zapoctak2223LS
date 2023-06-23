@@ -87,7 +87,7 @@ aritmetika v $\mathbb Z_p$ pro proměnné s různým $p$ atp.
 
 ### Třídy `number_utils::bigint` a `number_utils::bigint10`
 
-Třída `number_utils::bigint` implementuje aritmetiku s číslem v soustavě o základu $2^32$.
+Třída `number_utils::bigint` implementuje aritmetiku s číslem v soustavě o základu $2^{32}$.
 
 Třída `number_utils::bigint10` implementuje aritmetiku s číslem v soustavě o základu $10^9$ - triviální převod do desítkové soustavy.
 
